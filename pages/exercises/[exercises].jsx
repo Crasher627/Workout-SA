@@ -81,10 +81,8 @@ export default function Page({exercises, totalPages}) {
        
   };
   if (status==="loading"){
-    // return (<span>Loading</span>)
     return ("<span>Loading</span>")
    }
-   //data: Session / undefined / null
    if (!session){
      return (<span>Please sign in first</span>)
    }
@@ -118,11 +116,16 @@ export default function Page({exercises, totalPages}) {
           ))}
         </ul>
         <div>
+          <br></br>
+        <ul className="pagination">
         {Array.from({ length: totalPages }, (_, i) => (
-          <Link href={`/exercises/exercises?page=${i + 1}`}>
+          <li className="page-item">
+          <Link className="page-link" href={`/exercises/exercises?page=${i + 1}`}>
             {i + 1}
           </Link>
+          </li>
         ))}
+        </ul>
       </div>
         </div>
 

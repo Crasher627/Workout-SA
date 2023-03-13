@@ -34,6 +34,11 @@ export default function Navigation() {
                  Exercises
 
               </Link>
+              <Link href="/workouts/workouts" className="m-2">
+
+                 Workouts
+
+              </Link>
 
 
           </Nav>

@@ -47,6 +47,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   isAdmin       Boolean   @default(false)
+  workoutPlans WorkoutPlan[]
 }
 
 model VerificationToken {
@@ -61,5 +62,32 @@ model Exercises {
   id          Int      @id @default(autoincrement())
   name        String
   description String
+  workoutPlanExercises WorkoutPlanExercise[]
+}
 
+model WorkoutPlan {
+  id Int @id @default(autoincrement())
+  userId String
+  workoutName String
+  user User @relation(fields: [userId], references: [id])
+  workoutPlanExercises WorkoutPlanExercise[]
+}
+
+model WorkoutPlanExercise {
+  id Int @id @default(autoincrement())
+  workoutPlanId Int
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
+  exerciseId Int
+  exercise Exercises @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  totalSets Int 
+  workoutPlanExerciseSets WorkoutPlanExerciseSet[]
+}
+
+model WorkoutPlanExerciseSet {
+  id Int @id @default(autoincrement())
+  workoutPlanExerciseId Int
+  workoutPlanExercise WorkoutPlanExercise @relation(fields: [workoutPlanExerciseId], references: [id], onDelete: Cascade)
+  setNumber Int
+  reps Int
+  weight Int
 }
