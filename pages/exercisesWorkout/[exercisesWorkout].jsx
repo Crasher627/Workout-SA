@@ -106,7 +106,7 @@ export default function Page({exercises, totalPages}) {
               <Form.Label>Number of sets</Form.Label>
               <Form.Control
                 type="number"
-                min="0"
+                min="1"
                 value={setNum} onChange={(e) => setSetNum(e.target.value)}
                 autoFocus
                 required

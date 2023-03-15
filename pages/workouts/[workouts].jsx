@@ -183,8 +183,9 @@ export default function Page({workouts, totalPages}) {
             
             <Accordion.Body>
             
-              <h6>Exercises:</h6>
-              {workout.workoutPlanExercises.map((exercise) => (
+            <h6>Exercises:</h6>
+              {workout.workoutPlanExercises.length > 0 ? (workout.workoutPlanExercises.map((exercise) => (
+                <>    
                 <Accordion>
                 <Accordion.Item eventKey={exercise.id}>
                 <Accordion.Header>{exercise.exercise.name}</Accordion.Header>
@@ -226,7 +227,8 @@ export default function Page({workouts, totalPages}) {
                   </Accordion.Body> 
                   </Accordion.Item>
                 </Accordion>
-              ))}
+                </>
+              ))): <p>No exercises found. Please add exercises using the button below.</p>}
               <br></br>
               <Link className="btn btn-primary m-2" href={`/exercisesWorkout/exercisesWorkout?data=${encodeURIComponent(workout.id)}`}>Add exercise</Link>
               <Button className="m-2" variant="primary" onClick={() => handleShowNameChange(workout.id)}>Rename</Button>
@@ -234,7 +236,8 @@ export default function Page({workouts, totalPages}) {
               <Button className="m-2" variant="outline-danger" onClick={() => handleShow(workout.id)}>Delete</Button>
               </Accordion.Body>           
             </Accordion.Item>
-            </Accordion>))}
+            </Accordion>
+            ))}
         </ul>
         <div>
           <br></br>
@@ -321,7 +324,7 @@ export default function Page({workouts, totalPages}) {
   handleNameChange(newName, editableWorkoutId);
 }}>
             <Form.Group className="mb-3" controlId="exampleForm.ControlInput1">
-              <Form.Label>User email</Form.Label>
+              <Form.Label>New name</Form.Label>
               <Form.Control
                 type="text"
                 required
