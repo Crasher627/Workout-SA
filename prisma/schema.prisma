@@ -90,4 +90,15 @@ model WorkoutPlanExerciseSet {
   setNumber Int
   reps Int
   weight Int
+  updatedAt DateTime? @updatedAt
+  setHistory SetHistory[]
+}
+
+model SetHistory {
+  id                     Int      @id @default(autoincrement())
+  workoutPlanExerciseSet WorkoutPlanExerciseSet @relation(fields: [workoutPlanExerciseSetId], references: [id], onDelete: Cascade)
+  workoutPlanExerciseSetId Int
+  reps                   Int
+  weight                 Int
+  date                   DateTime?
 }

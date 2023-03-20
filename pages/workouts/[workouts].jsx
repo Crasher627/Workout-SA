@@ -183,13 +183,17 @@ export default function Page({workouts, totalPages}) {
             
             <Accordion.Body>
             
-            <h6>Exercises:</h6>
+            {workout.workoutPlanExercises.length > 0 ? 
+            <Link className="btn btn-success m-2 btn-block w-100"  href={`/selectedWorkouts/selectedWorkout?data=${encodeURIComponent(workout.id)}`}>Start workout</Link>: null} 
+            <h5>Exercises:</h5>
+            
               {workout.workoutPlanExercises.length > 0 ? (workout.workoutPlanExercises.map((exercise) => (
-                <>    
+                
+                <>  
                 <Accordion>
                 <Accordion.Item eventKey={exercise.id}>
                 <Accordion.Header>{exercise.exercise.name}</Accordion.Header>
-                <Accordion.Body>
+                <Accordion.Body>               
                   {exercise.workoutPlanExerciseSets.map((set) => (
                     <>
                     <ul>
@@ -202,7 +206,8 @@ export default function Page({workouts, totalPages}) {
                               <p>Reps: </p>
                             </div>
                             <div className="col-sm-8">
-                              <input defaultValue={set.reps} className="w-50" type="number" min="0"></input>
+                              <p>{set.reps}</p>
+                              {/* <input defaultValue={set.reps} className="w-50" type="number" min="0"></input> */}
                             </div>
                           </div>
                         </div>
@@ -212,7 +217,8 @@ export default function Page({workouts, totalPages}) {
                               <p>Weight: </p>
                             </div>
                             <div className="col-sm-8">
-                              <input defaultValue={set.weight} className="w-50" type="number" min="0"></input>
+                              <p>{set.weight}</p>
+                              {/* <input defaultValue={set.weight} className="w-50" type="number" min="0"></input> */}
                             </div>
                           </div>
                         </div>
@@ -223,7 +229,7 @@ export default function Page({workouts, totalPages}) {
                   ))}
                   <Button className="m-2" variant="primary" onClick={() => handleAddSet(exercise.id, exercise.totalSets)}>Add set</Button>
                   <Button className="m-2" variant="danger" onClick={() => handleDeleteSet(exercise.id, exercise.totalSets)}>Delete set</Button>
-                  <Button className="m-2" variant="danger" onClick={() => handleShowExercise(exercise.id)}>Delete</Button>
+                  <Button className="m-2" variant="outline-danger" onClick={() => handleShowExercise(exercise.id)}>Delete exercise</Button>
                   </Accordion.Body> 
                   </Accordion.Item>
                 </Accordion>
@@ -231,9 +237,9 @@ export default function Page({workouts, totalPages}) {
               ))): <p>No exercises found. Please add exercises using the button below.</p>}
               <br></br>
               <Link className="btn btn-primary m-2" href={`/exercisesWorkout/exercisesWorkout?data=${encodeURIComponent(workout.id)}`}>Add exercise</Link>
-              <Button className="m-2" variant="primary" onClick={() => handleShowNameChange(workout.id)}>Rename</Button>
-              <Button className="m-2" variant="primary" onClick={() => handleShowShare(workout.id)}>Share</Button>
-              <Button className="m-2" variant="outline-danger" onClick={() => handleShow(workout.id)}>Delete</Button>
+              <Button className="m-2" variant="primary" onClick={() => handleShowNameChange(workout.id)}>Rename workout</Button>
+              <Button className="m-2" variant="primary" onClick={() => handleShowShare(workout.id)}>Share workout</Button>
+              <Button className="m-2" variant="outline-danger" onClick={() => handleShow(workout.id)}>Delete workout</Button>
               </Accordion.Body>           
             </Accordion.Item>
             </Accordion>
@@ -363,7 +369,19 @@ export async function getServerSideProps({ req, res, query }) {
       workoutPlanExercises: {
         include: {
           exercise: true,
-          workoutPlanExerciseSets: true,
+          workoutPlanExerciseSets: {select: {
+            id: true,
+            setNumber: true,
+            reps: true,
+            weight: true,
+            setHistory: {
+              select: {
+                id: true,
+                reps: true,
+                weight: true,
+              }
+            }
+          }},
         }}},
     skip: (page - 1) * ITEMS_PER_PAGE,
     take: ITEMS_PER_PAGE,

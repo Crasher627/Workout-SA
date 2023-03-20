@@ -62,9 +62,48 @@ export default async function handler(req, res) {
                     }
                     return res.status(401).json({ error: 'All values must be filled' });
                 }
+            case 'PUT':
+                {
+                    // console.log(req.body);
+                    const updatedSets = [];
+                    const data = req.body;
+                    if (data) {
+                    for (const setId in data) {
+                        const set = data[setId];
+                        if (set.reps !== undefined || set.weight !== undefined) {
+                            const existingSet = await prisma.workoutPlanExerciseSet.findUnique({
+                              where: { id: parseInt(setId) },
+                            });
+
+                            const logSet = await prisma.setHistory.create({
+                                data: {
+                                    workoutPlanExerciseSetId: existingSet.id,
+                                    reps: existingSet.reps,
+                                    weight: existingSet.weight,
+                                    date: existingSet.updatedAt
+                                }
+                            })
+                      
+                            // Update the set with the new values
+                            const updatedSet = await prisma.workoutPlanExerciseSet.update({
+                              where: { id: parseInt(setId) },
+                              data: {
+                                reps: set.reps !== undefined ? parseInt(set.reps) : existingSet.reps,
+                                weight: set.weight !== undefined ? parseInt(set.weight) : existingSet.weight,
+                              },
+                            });
+                      
+                            updatedSets.push(updatedSet, logSet);
+                        }
+                    }
+                    return res.status(200).json(updatedSets);
+                }
+                return res.status(401).json({ error: 'Data must not be empty' });
+
+                }
 
             default:
-                res.setHeader('Allow', ['POST', 'DELETE']);
+                res.setHeader('Allow', ['POST', 'DELETE', 'PUT']);
                 res.status(405).end(`Method ${method} not allowed`);
         }
     }
