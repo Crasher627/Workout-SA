@@ -110,6 +110,7 @@ export default function Page({exercises, totalPages}) {
                 value={setNum} onChange={(e) => setSetNum(e.target.value)}
                 autoFocus
                 required
+                onKeyDown={(event) => {event.preventDefault();}}
               />
             </Form.Group>
           </Form>

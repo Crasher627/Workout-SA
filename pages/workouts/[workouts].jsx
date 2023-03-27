@@ -184,7 +184,39 @@ export default function Page({workouts, totalPages}) {
             <Accordion.Body>
             
             {workout.workoutPlanExercises.length > 0 ? 
-            <Link className="btn btn-success m-2 btn-block w-100"  href={`/selectedWorkouts/selectedWorkout?data=${encodeURIComponent(workout.id)}`}>Start workout</Link>: null} 
+            <Link className="btn btn-success m-2 btn-block w-100"  href={`/selectedWorkouts/selectedWorkout?data=${encodeURIComponent(workout.id)}`}>Start workout</Link>: null}
+            <br></br> 
+            {workout.workoutTimeLogs.length > 0 ?
+            <>
+            
+                          <div className="row">
+                            <div className="col-sm-6">
+                            <h5>Last workout time: {workout.workoutTimeLogs[0].hours.toString().padStart(2, "0")}:{workout.workoutTimeLogs[0].minutes.toString().padStart(2, "0")}:{workout.workoutTimeLogs[0].seconds.toString().padStart(2, "0")}</h5>
+                              </div>
+                              
+                              <div className="col-sm-6">
+                              <h5>Average workout time: {(() => {
+  let totalSeconds = 0
+  for(let i = 0; i < workout.workoutTimeLogs.length; i++){
+      totalSeconds += (workout.workoutTimeLogs[i].hours *60 * 60) + (workout.workoutTimeLogs[i].minutes *60) + workout.workoutTimeLogs[i].seconds;
+  }
+  const averageSeconds = totalSeconds/workout.workoutTimeLogs.length;
+  const hours   = Math.floor(averageSeconds / 3600);
+  const minutes = Math.floor((averageSeconds - (hours * 3600)) / 60);
+  const seconds = Math.floor(averageSeconds - (hours * 3600) - (minutes * 60));
+
+  const formatedTime = hours.toString().padStart(2, '0') + ':' + minutes.toString().padStart(2, '0') + ':' + seconds.toString().padStart(2, '0');
+  return formatedTime;
+})()}</h5>
+</div>
+                              </div>
+              
+
+            
+            
+
+            </> : null}
+            <br></br>
             <h5>Exercises:</h5>
             
               {workout.workoutPlanExercises.length > 0 ? (workout.workoutPlanExercises.map((exercise) => (
@@ -365,7 +397,11 @@ export async function getServerSideProps({ req, res, query }) {
     where: {
       userId: userId,
     },
-    include: {
+    include: {workoutTimeLogs: {
+      orderBy: {
+        createdAt: 'desc'
+      }
+    },
       workoutPlanExercises: {
         include: {
           exercise: true,
@@ -386,10 +422,24 @@ export async function getServerSideProps({ req, res, query }) {
     skip: (page - 1) * ITEMS_PER_PAGE,
     take: ITEMS_PER_PAGE,
   });
+  
+  const formattedWorkouts = workouts.map(workout => {
+    const formattedLogs = workout.workoutTimeLogs.map(log => {
+      return {
+        ...log,
+        createdAt: new Date(log.createdAt).toISOString()
+      };
+    });
+
+    return {
+      ...workout,
+      workoutTimeLogs: formattedLogs
+    };
+  });
 
   return {
     props: {
-      workouts,
+      workouts: formattedWorkouts,
       workoutsCount,
       currentPage: page,
       totalPages: Math.ceil(workoutsCount / ITEMS_PER_PAGE),

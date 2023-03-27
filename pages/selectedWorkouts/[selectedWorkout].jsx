@@ -2,10 +2,7 @@ import { useSession } from "next-auth/react"
 import { Button } from "react-bootstrap";
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Form from 'react-bootstrap/Form';
-import Container from "react-bootstrap";
 import axios from "axios"
-import Link from "next/link"
 import { authOptions } from 'pages/api/auth/[...nextauth]'
 import { getServerSession } from "next-auth/next"
 import Modal from 'react-bootstrap/Modal';
@@ -14,17 +11,27 @@ import Accordion from 'react-bootstrap/Accordion';
 export default function Page({workout}) {
     const { data: session, status } = useSession();
 
-    //Refresh
   const router = useRouter()
-  //const workoutPlanId = Number(router.query.data);
+  const workoutPlanId = Number(router.query.data);
 
-  const refreshData = () => {
-    router.replace(router.asPath);
-  }
 
   const [inputData, setInputData] = useState({});
   const [totalVolume, setTotalVolume] = useState(0);
 
+  const [showConfirm, setShowConfirm] = useState(false);
+
+  const handleClose = () => setShowConfirm(false);
+
+  const handleShow = () => {
+    setShowConfirm(true);
+  }
+
+  const handleClear = () => {
+    setShowConfirm(false);
+    localStorage.removeItem('inputData');
+    localStorage.removeItem('timer');
+    router.push("/workouts/workouts");
+  }
   
 
   const handleInputChange = (event, setId) => {
@@ -36,20 +43,38 @@ export default function Page({workout}) {
         [name]: value,
       },
     }));
+    localStorage.setItem('inputData', JSON.stringify({
+      ...inputData,
+      [setId]: {
+        ...inputData[setId],
+        [name]: value,
+      },
+    }));
   };
+  
+
+
 
   const setDefaultData = () => {
-    const defaultData = {};
-    workout.workoutPlanExercises.forEach((exercise) => {
-      exercise.workoutPlanExerciseSets.forEach((set) => {
-        defaultData[set.id] = {
-          reps: set.reps,
-          weight: set.weight,
-        };
+    const savedData = localStorage.getItem('inputData');
+    if (savedData) {
+      setInputData(JSON.parse(savedData));
+    } else {
+      const defaultData = {};
+      workout.workoutPlanExercises.forEach((exercise) => {
+        exercise.workoutPlanExerciseSets.forEach((set) => {
+          defaultData[set.id] = {
+            reps: set.reps,
+            weight: set.weight,
+          };
+        });
       });
-    });
-    setInputData(defaultData);
+      setInputData(defaultData);
+      localStorage.setItem('inputData', JSON.stringify(defaultData));
+    }
   };
+  
+  
 
   useEffect(() => {
     setDefaultData();
@@ -57,9 +82,11 @@ export default function Page({workout}) {
 
   const updateSets = async () => {
     try {
-      const updatedSets = await axios.put(`/api/sets`, inputData);
-      console.log(updatedSets);
+      await axios.put(`/api/sets`, inputData);
+      await axios.post(`/api/workoutLogs`, {workoutPlanId, hours, minutes, seconds});
       setModalOpen(false);
+      localStorage.removeItem('inputData');
+      localStorage.removeItem('timer');
       router.push("/workouts/workouts");
     } catch (error) {
       console.log(error);
@@ -85,6 +112,62 @@ export default function Page({workout}) {
       || (inputData[set.id].reps > Math.max(...set.setHistory.map((history) => history.reps))) && inputData[set.id].reps > set.reps);
     });
   });
+
+  // timer
+const [hours, setHours] = useState(() => {
+  if (typeof window !== "undefined") {
+    const storedTime = localStorage.getItem("timer");
+    if (storedTime) {
+      return JSON.parse(storedTime).hours;
+    }
+  }
+  return 0;
+});
+const [minutes, setMinutes] = useState(() => {
+  if (typeof window !== "undefined") {
+    const storedTime = localStorage.getItem("timer");
+    if (storedTime) {
+      return JSON.parse(storedTime).minutes;
+    }
+  }
+  return 0;
+});
+const [seconds, setSeconds] = useState(() => {
+  if (typeof window !== "undefined") {
+    const storedTime = localStorage.getItem("timer");
+    if (storedTime) {
+      return JSON.parse(storedTime).seconds;
+    }
+  }
+  return 0;
+});
+
+useEffect(() => {
+  const interval = setInterval(() => {
+    setSeconds((prevSeconds) => {
+      if (prevSeconds === 59) {
+        setMinutes((prevMinutes) => {
+          if (prevMinutes === 59) {
+            setHours((prevHours) => prevHours + 1);
+            return 0;
+          }
+          return prevMinutes + 1;
+        });
+        return 0;
+      }
+      return prevSeconds + 1;
+    });
+  }, 1000);
+
+  return () => clearInterval(interval);
+}, []);
+
+
+useEffect(() => {
+  localStorage.setItem("timer", JSON.stringify({ hours, minutes, seconds }));
+}, [hours, minutes, seconds]);
+
+
   
 
 
@@ -100,6 +183,9 @@ export default function Page({workout}) {
 
         <div className="container">
             <h3 className="text-center">{workout.workoutName}</h3>
+            <h4>Time: {`${hours.toString().padStart(2, "0")}:${minutes
+        .toString()
+        .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`}</h4>
             {workout.workoutPlanExercises.length > 0 ? (workout.workoutPlanExercises.map((exercise) => (
             <>
               <Accordion>
@@ -118,7 +204,7 @@ export default function Page({workout}) {
                               <p>Reps: </p>
                             </div>
                             <div className="col-sm-8">
-                              <input defaultValue={set.reps} className="w-50" type="number" min="0" name="reps" onChange={(e) =>
+                              <input defaultValue={set.reps} value={inputData[set.id]?.reps} className="w-50" type="number" min="0" name="reps" onChange={(e) =>
                             handleInputChange(e, set.id)
                           }></input>
                             </div>
@@ -130,7 +216,7 @@ export default function Page({workout}) {
                               <p>Weight: </p>
                             </div>
                             <div className="col-sm-8">
-                              <input defaultValue={set.weight} className="w-50" type="number" min="0" name="weight" onChange={(e) =>
+                              <input defaultValue={set.weight} value={inputData[set.id]?.weight} className="w-50" type="number" min="0" name="weight" onChange={(e) =>
                             handleInputChange(e, set.id)
                           }></input>
                             </div>
@@ -169,8 +255,10 @@ export default function Page({workout}) {
             <div>
               <br></br>
             <Button className="btn btn-success w-100" onClick={openModal}>Show Summary</Button>
-        
-
+      </div>
+      <div>
+      <br></br>
+            <Button className="btn btn-danger w-100" onClick={handleShow}>Discard changes</Button>
       </div>
         </div>
 
@@ -187,23 +275,24 @@ export default function Page({workout}) {
     <div>
     {filteredExercises.length > 0 ?<h4>Records broken:</h4>: null}
     {filteredExercises.length > 0 ? filteredExercises.map((exercise) => (
-      <div key={exercise.id}>
-        <h5>{exercise.exercise.name}</h5>
-        <ul>
-          {exercise.workoutPlanExerciseSets.map((set) => {
-            if (inputData[set.id].weight > Math.max(...set.setHistory.map((history) => history.weight))) 
-            {
-              return (
-                <li key={set.id}>
-                  Set {set.setNumber}: {inputData[set.id].reps} reps, {inputData[set.id].weight} weight
-                </li>
-              );
-            }
-            return null;
-          })}
-        </ul>
-      </div>
-    )): <h4>No records were broken</h4>}
+  <div key={exercise.id}>
+    <h5>{exercise.exercise.name}</h5>
+    <ul>
+      {exercise.workoutPlanExerciseSets.filter((set) => {
+        return inputData[set.id] && 
+          ((inputData[set.id].weight > Math.max(...set.setHistory.map((history) => history.weight)) && inputData[set.id].weight > set.weight)
+          || (inputData[set.id].reps > Math.max(...set.setHistory.map((history) => history.reps))) && inputData[set.id].reps > set.reps);
+      }).map((set) => {
+        return (
+          <li key={set.id}>
+            Set {set.setNumber}: {inputData[set.id].reps} reps, {inputData[set.id].weight} weight
+          </li>
+        );
+      })}
+    </ul>
+  </div>
+)): <h4>No records were broken</h4>}
+
     </div>
   </Modal.Body>
   <Modal.Footer>
@@ -213,6 +302,22 @@ export default function Page({workout}) {
     </Button>
   </Modal.Footer>
 </Modal>
+
+{/* Clear local storage modal */}
+<Modal show={showConfirm} onHide={handleClose}>
+        <Modal.Header closeButton>
+          <Modal.Title>Discard changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>Are you sure you want to permanatly discard changes?</Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClose}>
+            Close
+          </Button>
+          <Button variant="danger" onClick={() => handleClear()}>
+            Discard
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
     </>)
    }

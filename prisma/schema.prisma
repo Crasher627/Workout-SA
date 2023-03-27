@@ -71,6 +71,17 @@ model WorkoutPlan {
   workoutName String
   user User @relation(fields: [userId], references: [id])
   workoutPlanExercises WorkoutPlanExercise[]
+  workoutTimeLogs WorkoutTimeLogs[]
+}
+
+model WorkoutTimeLogs {
+  id Int @id @default(autoincrement())
+  hours Int
+  minutes Int
+  seconds Int
+  createdAt DateTime? @default(now())
+  workoutPlanId Int
+  workoutPlan WorkoutPlan @relation(fields: [workoutPlanId], references: [id], onDelete: Cascade)
 }
 
 model WorkoutPlanExercise {
