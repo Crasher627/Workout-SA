@@ -11,7 +11,7 @@ export default async function handler(req, res) {
             case 'POST':
                 {
                     const {workoutPlanId, hours, minutes, seconds} = req.body;
-                    if(workoutPlanId && hours >= 0 && minutes >= 0 && seconds >=0) {
+                    if(workoutPlanId && hours >= 0 && minutes >= 0 && seconds >=0 && minutes <= 60 && seconds <=60) {
                         const workoutTimeLogs = await prisma.workoutTimeLogs.create({
                             data:{
                                 workoutPlanId,
